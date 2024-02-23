@@ -7,6 +7,7 @@ from . import utility
 from .data import Data
 from .nodata import Test
 from .parameter import Parameter
+from .effects import EffectsList
 
 class Config:
     def __init__(self, input_filename, parameters=None):
@@ -16,6 +17,7 @@ class Config:
         self.initial_levels = utility.read_levels(input_filename)
         self.data = Data(self.input_filename)
         self.test = Test(self.input_filename)
+        self.expeffects = EffectsList(self.input_filename)
 
         if parameters is None:
             self.parameters = []
@@ -64,14 +66,17 @@ class Config:
 
         self.n1 = len(self.parameters)
         self.n2 = len(self.data.norm_segment_indices)
+        self.n3 = len(self.expeffects.target_int_indexes)
         # number of free parameters
-        self.nd = self.n1 + self.n2
+        self.nd = self.n1 + self.n2 +self.n3
 
         self.labels = []
         for i in range(self.n1):
             self.labels.append(self.parameters[i].label)
         for i in self.data.norm_segment_indices:
             self.labels.append(self.data.segments[i].nf.label)
+        for i in self.expeffects.target_int_indexes:
+            self.labels.append(self.expeffects.effects[i].tt.label)
 
 
     def generate_levels(self, theta):
@@ -98,6 +103,8 @@ class Config:
                   self.addresses]
         for i in self.data.norm_segment_indices:
             values.append(self.data.segments[i].norm_factor)
+        for i in self.expeffects.target_int_indexes:
+            values.append(self.expeffects.effects[i].target_thickness)
         return values
 
 
@@ -120,16 +127,15 @@ class Config:
         contents = self.input_file_contents.copy()
 
         new_levels = self.generate_levels(theta[:self.n1])
+        contents = self.expeffects.update_target_thickness(theta[self.n1+self.n2:self.n1+self.n2+self.n3],contents)
         contents = self.data.update_norm_factors(theta[self.n1:self.n1+self.n2],
             contents)
 
         input_filename, output_dir, data_dir = utility.random_workspace(prepend=prepend)
 
-
         if mod_data is not None:
             contents = self.data.update_all_dir(data_dir, contents)
-            utility.write_input_file(contents, new_levels, input_filename,
-                output_dir)
+            utility.write_input_file(contents, new_levels, input_filename, output_dir)
             for (i, data) in mod_data:
                 self.data.segments[i].update_dir(data_dir, data)
         else:

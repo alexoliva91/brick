@@ -53,3 +53,9 @@ class NormFactor:
     def __init__(self, dataset_index):
         self.index = dataset_index
         self.label = r'$n_{%d}$' % (self.index+1)
+
+
+class TargetThickness:
+    def __init__(self, dataset_index):
+        self.index = dataset_index
+        self.label = r'$TT_{%d}$' % (self.index+1)
